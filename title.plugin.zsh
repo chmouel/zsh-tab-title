@@ -29,12 +29,24 @@ function title {
         print -Pn "\e]2;$2:q\a" # set window name
         print -Pn "\e]1;$1:q\a" # set tab name
       ;;
-      
+
       screen*|tmux*)
         print -Pn "\ek$1:q\e\\" # set screen hardstatus
       ;;
     esac
   fi
+}
+
+function settitle() {
+	local thetitle
+    local _vcs_root_prefix
+    thetitle="%3~"
+    # [[ -n ${vcs_info_git_root} ]] && thetitle="${_vcs_root_prefix}$vcs_info_git_root:t${${PWD:A}#$~~vcs_info_git_root}"
+    [[ -n ${vcs_info_git_root} ]] && {
+        [[ ${vcs_info_msg_0_} == *red* ]] && _vcs_root_prefix="🔻" || _vcs_root_prefix="🔆"
+        thetitle="${_vcs_root_prefix}$vcs_info_git_root:t"
+    }
+	ZSH_THEME_TERM_TITLE_IDLE="$ZSH_TAB_TITLE_PREFIX${thetitle} $ZSH_TAB_TITLE_SUFFIX"
 }
 
 ZSH_THEME_TERM_TAB_TITLE_IDLE="%20<..<%~%<<" #15 char left truncated PWD
@@ -45,7 +57,7 @@ elif [[ -z "$ZSH_TAB_TITLE_PREFIX" ]]; then
   ZSH_TAB_TITLE_PREFIX="%n@%m:"
 fi
 
-ZSH_THEME_TERM_TITLE_IDLE="$ZSH_TAB_TITLE_PREFIX %~ $ZSH_TAB_TITLE_SUFFIX"
+settitle
 
 # Runs before showing the prompt
 function omz_termsupport_precmd {
@@ -54,6 +66,8 @@ function omz_termsupport_precmd {
   if [[ "$ZSH_TAB_TITLE_DISABLE_AUTO_TITLE" == true ]]; then
     return
   fi
+
+  settitle
 
   if [[ "$ZSH_TAB_TITLE_ONLY_FOLDER" == true ]]; then
     ZSH_THEME_TERM_TAB_TITLE_IDLE=${PWD##*/}
@@ -79,12 +93,13 @@ function omz_termsupport_preexec {
     title "${PWD##*/}:%100>...>$LINE%<<" "${PWD##*/}:${CMD}"
   else
     title "%100>...>$LINE%<<" "$CMD"
-  fi  
+  fi
 }
+
 
 # Execute the first time, so it show correctly on terminal load
 title "$ZSH_THEME_TERM_TAB_TITLE_IDLE" "$ZSH_THEME_TERM_TITLE_IDLE"
 
 autoload -U add-zsh-hook
 add-zsh-hook precmd omz_termsupport_precmd
-add-zsh-hook preexec omz_termsupport_preexec
+#add-zsh-hook preexec omz_termsupport_preexec
