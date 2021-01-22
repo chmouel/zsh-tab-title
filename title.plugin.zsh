@@ -38,15 +38,17 @@ function title {
 }
 
 function settitle() {
+set -x
 	local thetitle
     local _vcs_root_prefix
     thetitle="%3~"
     # [[ -n ${vcs_info_git_root} ]] && thetitle="${_vcs_root_prefix}$vcs_info_git_root:t${${PWD:A}#$~~vcs_info_git_root}"
     [[ -n ${vcs_info_git_root} ]] && {
-        [[ ${vcs_info_msg_0_} == *red* ]] && _vcs_root_prefix="🔻" || _vcs_root_prefix="🔆"
+        [[ ${vcs_info_msg_0_} == *red* ]] && _vcs_root_prefix="🔻" || _vcs_root_prefix=""
         thetitle="${_vcs_root_prefix}$vcs_info_git_root:t"
     }
 	ZSH_THEME_TERM_TITLE_IDLE="$ZSH_TAB_TITLE_PREFIX${thetitle} $ZSH_TAB_TITLE_SUFFIX"
+set +x
 }
 
 ZSH_THEME_TERM_TAB_TITLE_IDLE="%20<..<%~%<<" #15 char left truncated PWD
