@@ -14,6 +14,9 @@ _in_zellij() { [[ -n "$ZELLIJ" || -n "$ZELLIJ_SESSION_NAME" ]]; }
 _zt_rename_tab()  { command zellij action rename-tab  "$1" >/dev/null 2>&1; }
 _zt_rename_pane() { command zellij action rename-pane "$1" >/dev/null 2>&1; }
 
+# Detect Herdr (https://herdr.dev), which only labels tabs via its CLI
+_in_herdr() { [[ -n "$HERDR_TAB_ID" ]] && (( $+commands[herdr] )); }
+
 # Optional associative arrays for custom name mapping
 (( ${+ZSH_TAB_TITLE_CMD_MAP} )) || typeset -gA ZSH_TAB_TITLE_CMD_MAP
 
@@ -31,6 +34,14 @@ function title {
     _zt_rename_tab "$tab_name"
     _zt_rename_pane "$pane_name"
     return
+  fi
+
+  if _in_herdr; then
+    local herdr_tab_name="$(print -P "$1")"
+    if [[ -n "$herdr_tab_name" && "$herdr_tab_name" != "${_zt_herdr_last:-}" ]]; then
+      typeset -g _zt_herdr_last="$herdr_tab_name"
+      command herdr tab rename "$HERDR_TAB_ID" "$herdr_tab_name" >/dev/null 2>&1 &!
+    fi
   fi
 
   tabTitle="\$1"

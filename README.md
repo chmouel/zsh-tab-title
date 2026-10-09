@@ -150,7 +150,7 @@ DEBUG=true ZSH_TAB_PROMPT="Debug Mode" node server.js
 
 ### ADDITIONAL TERMS
 
-By default the tab title is set for iTerm, Hyper, and where ``$TERM`` is set to one of ``cygwin,xterm*,putty*,rxvt*,ansi,screen*,tmux*``
+By default the tab title is set for iTerm, Hyper, Zellij, Herdr (via ``herdr tab rename``), and where ``$TERM`` is set to one of ``cygwin,xterm*,putty*,rxvt*,ansi,screen*,tmux*``
 Additional $TERMS to set the tab title for can be configured with the variable ``ZSH_TAB_TITLE_ADDITIONAL_TERMS``. For example:
 
 ```sh
