@@ -287,7 +287,9 @@ function omz_termsupport_preexec {
 
   # Agent sessions: follow the agent's session name while it runs
   if [[ "${ZSH_TAB_TITLE_AGENT_SESSION:-true}" == true ]] && _in_herdr && (( $+commands[jq] )); then
-    local agent_cmd=${${1[(wr)^(*=*|sudo|command|exec|env|nocorrect|noglob|-*)]}:t}
+    # $2 has aliases expanded, so `co` aliased to `copilot` is still detected
+    local agent_line=${2:-$1}
+    local agent_cmd=${${agent_line[(wr)^(*=*|sudo|command|exec|env|nocorrect|noglob|-*)]}:t}
     if (( ${ZSH_TAB_TITLE_AGENTS[(Ie)$agent_cmd]} )); then
       _zt_agent_watch_stop
       _zt_agent_watch &!
