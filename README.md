@@ -148,6 +148,24 @@ ZSH_TAB_PROMPT="API Dev" npm run dev
 DEBUG=true ZSH_TAB_PROMPT="Debug Mode" node server.js
 ```
 
+### AGENT SESSION TITLE (Herdr)
+
+When running inside [Herdr](https://herdr.dev) and launching an AI coding agent, the plugin starts a small background watcher that keeps the tab title in sync with the agent session while it runs. It asks Herdr (`herdr pane get`) which agent runs in the pane and uses:
+
+1. the session name for [pi](https://pi.dev) (last `session_info` entry of the session file), or
+2. the terminal title set by the agent (e.g. Claude Code, Codex).
+
+The watcher stops when the agent exits and the normal idle title is restored. Requires `jq`.
+
+```sh
+# Commands treated as agents (default shown)
+ZSH_TAB_TITLE_AGENTS=(pi claude codex opencode gemini amp crush cursor-agent droid)
+# Poll interval in seconds (default 3)
+ZSH_TAB_TITLE_AGENT_POLL=3
+# Disable the feature
+ZSH_TAB_TITLE_AGENT_SESSION=false
+```
+
 ### ADDITIONAL TERMS
 
 By default the tab title is set for iTerm, Hyper, Zellij, Herdr (via ``herdr tab rename``), and where ``$TERM`` is set to one of ``cygwin,xterm*,putty*,rxvt*,ansi,screen*,tmux*``

@@ -17,6 +17,57 @@ _zt_rename_pane() { command zellij action rename-pane "$1" >/dev/null 2>&1; }
 # Detect Herdr (https://herdr.dev), which only labels tabs via its CLI
 _in_herdr() { [[ -n "$HERDR_TAB_ID" ]] && (( $+commands[herdr] )); }
 
+# Commands considered AI coding agents. While one runs in herdr, a background
+# watcher keeps the tab title in sync with the agent session name.
+(( ${+ZSH_TAB_TITLE_AGENTS} )) || typeset -ga ZSH_TAB_TITLE_AGENTS=(pi claude codex opencode gemini amp crush cursor-agent droid)
+
+# Print the current agent session title for this herdr pane.
+# Prefers the pi session name (session_info entry), falls back to the
+# terminal title set by the agent. Returns 1 when herdr reports no agent.
+_zt_agent_title() {
+  local json agent sess name
+  json=$(command herdr pane get "$HERDR_PANE_ID" 2>/dev/null) || return 2
+  agent=$(command jq -r '.result.pane.agent // empty' <<<"$json" 2>/dev/null)
+  [[ -n "$agent" ]] || return 1
+  sess=$(command jq -r '.result.pane.agent_session.value // empty' <<<"$json" 2>/dev/null)
+  if [[ "$agent" == pi && -f "$sess" ]]; then
+    name=$(command grep -F '"type":"session_info"' "$sess" 2>/dev/null | command tail -n 1 | command jq -r '.name // empty' 2>/dev/null)
+  fi
+  [[ -n "$name" ]] || name=$(command jq -r '.result.pane.terminal_title_stripped // empty' <<<"$json" 2>/dev/null)
+  print -r -- "$name"
+}
+
+# Background loop: rename the herdr tab whenever the agent title changes.
+# Exits once herdr stops reporting an agent (after it was seen) or after a
+# grace period if no agent is ever detected.
+_zt_agent_watch() {
+  local title label seen=0 misses=0 rc
+  local interval=${ZSH_TAB_TITLE_AGENT_POLL:-3}
+  while :; do
+    title=$(_zt_agent_title); rc=$?
+    if (( rc == 0 )); then
+      seen=1; misses=0
+      # Compare against the live tab label so we re-assert our title if
+      # something else (another shell, the agent) renamed the tab meanwhile
+      label=$(command herdr tab get "$HERDR_TAB_ID" 2>/dev/null | command jq -r '.result.tab.label // empty' 2>/dev/null)
+      if [[ -n "$title" && "$title" != "$label" ]]; then
+        command herdr tab rename "$HERDR_TAB_ID" "$title" >/dev/null 2>&1
+      fi
+    else
+      (( seen )) && break
+      (( ++misses > 10 )) && break
+    fi
+    sleep "$interval"
+  done
+}
+
+_zt_agent_watch_stop() {
+  if [[ -n "${_zt_agent_watch_pid:-}" ]]; then
+    kill "$_zt_agent_watch_pid" 2>/dev/null
+    unset _zt_agent_watch_pid
+  fi
+}
+
 # Optional associative arrays for custom name mapping
 (( ${+ZSH_TAB_TITLE_CMD_MAP} )) || typeset -gA ZSH_TAB_TITLE_CMD_MAP
 
@@ -99,6 +150,10 @@ function setTerminalTitleInIdle {
 function omz_termsupport_precmd {
   emulate -L zsh
 
+  _zt_agent_watch_stop
+  # Force the idle title to be re-sent to herdr after an agent renamed the tab
+  unset _zt_herdr_last
+
   setTerminalTitleInIdle
 }
 
@@ -165,7 +220,17 @@ function omz_termsupport_preexec {
     title "${PWD##*/}:%100>...>$LINE%<<" "${PWD##*/}:${CMD}"
   else
     title "%100>...>$LINE%<<" "$CMD"
-  fi  
+  fi
+
+  # Agent sessions: follow the agent's session name while it runs
+  if [[ "${ZSH_TAB_TITLE_AGENT_SESSION:-true}" == true ]] && _in_herdr && (( $+commands[jq] )); then
+    local agent_cmd=${${1[(wr)^(*=*|sudo|command|exec|env|nocorrect|noglob|-*)]}:t}
+    if (( ${ZSH_TAB_TITLE_AGENTS[(Ie)$agent_cmd]} )); then
+      _zt_agent_watch_stop
+      _zt_agent_watch &!
+      typeset -g _zt_agent_watch_pid=$!
+    fi
+  fi
 }
 
 # Execute the first time, so it show correctly on terminal load
