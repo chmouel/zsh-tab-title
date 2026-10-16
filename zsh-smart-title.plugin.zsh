@@ -19,7 +19,7 @@ _in_herdr() { [[ -n "$HERDR_TAB_ID" ]] && (( $+commands[herdr] )); }
 
 # Commands considered AI coding agents. While one runs in herdr, a background
 # watcher keeps the tab title in sync with the agent session name.
-(( ${+ZSH_TAB_TITLE_AGENTS} )) || typeset -ga ZSH_TAB_TITLE_AGENTS=(pi claude codex opencode gemini amp crush cursor-agent droid)
+(( ${+ZSH_TAB_TITLE_AGENTS} )) || typeset -ga ZSH_TAB_TITLE_AGENTS=(pi claude codex opencode gemini amp crush cursor-agent droid copilot)
 
 # Print the current agent session title for this herdr pane.
 # Prefers the pi session name (session_info entry), falls back to the
@@ -37,19 +37,82 @@ _zt_agent_title() {
   print -r -- "$name"
 }
 
+# Squeeze an agent title: drop leading status glyphs, a trailing agent product
+# name, extra whitespace and filler words. A step that would leave nothing is
+# skipped.
+_zt_agent_compact() {
+  emulate -L zsh
+  setopt extended_glob
+  local s=$1 t
+  local -a words kept
+  local -a names=('GitHub Copilot' Copilot 'Claude Code' Claude Codex OpenCode
+    'Gemini CLI' Gemini Amp Crush 'Cursor Agent' Droid pi $ZSH_TAB_TITLE_AGENTS)
+  local suffix="(#i)([[:space:]]##[-|–—]|:)[[:space:]]##(${(j:|:)${(@b)names}})"
+
+  t=${s##[^[:alnum:]]#}
+  t=${t#?[[:space:]]##[-|:–—][[:space:]]##}
+  [[ -n ${t//[[:space:]]/} ]] && s=$t
+  t=${s%${~suffix}}
+  [[ -n ${t//[[:space:]]/} ]] && s=$t
+
+  words=(${=s})
+  kept=(${words:#(#i)(a|an|the|of|on|for|to|and|in|with)})
+  (( $#kept )) && words=($kept)
+  print -r -- "${(j: :)words}"
+}
+
+# Shorten a title to at most $2 chars at a word boundary, ending with "…".
+# A single word longer than the limit is cut hard. $2 <= 0 disables the cap.
+_zt_agent_cap() {
+  emulate -L zsh
+  setopt extended_glob
+  local t=$1 out w
+  local -i max=$2
+  if (( max <= 0 || ${#t} <= max )); then
+    print -r -- "$t"
+    return
+  fi
+  for w in ${=t}; do
+    (( ${#out} + ${#w} + (${#out} ? 1 : 0) > max - 1 )) && break
+    out+=${out:+ }$w
+  done
+  out=${out%[[:space:]][^[:alnum:][:space:]]##}
+  [[ -n $out ]] || out=${t[1,max-1]}
+  print -r -- "$out…"
+}
+
 # Background loop: rename the herdr tab whenever the agent title changes.
 # Exits once herdr stops reporting an agent (after it was seen) or after a
 # grace period if no agent is ever detected.
 _zt_agent_watch() {
-  local title label seen=0 misses=0 rc
+  local title label info cols seen=0 misses=0 rc
+  local -i ntabs cap
   local interval=${ZSH_TAB_TITLE_AGENT_POLL:-3}
+  local max=${ZSH_TAB_TITLE_AGENT_MAX_LENGTH:-auto}
+  [[ "$max" == <-> ]] || max=auto
   while :; do
     title=$(_zt_agent_title); rc=$?
     if (( rc == 0 )); then
       seen=1; misses=0
+      [[ "${ZSH_TAB_TITLE_AGENT_COMPACT:-true}" == true ]] && title=$(_zt_agent_compact "$title")
+      # Our live tab label plus the number of tabs in our workspace
+      info=$(command herdr tab list 2>/dev/null | command jq -r --arg id "$HERDR_TAB_ID" '
+        .result.tabs as $t | ($t[] | select(.tab_id == $id)) as $me
+        | "\([$t[] | select(.workspace_id == $me.workspace_id)] | length)\t\($me.label // "")"' 2>/dev/null)
+      ntabs=${info%%$'\t'*}
+      label=${info#*$'\t'}
+      if [[ "$max" == auto ]]; then
+        # Share the pane width between the tabs, kept within 15..40 chars
+        cols=${$(command stty size 2>/dev/null </dev/tty)#* }
+        [[ "$cols" == <1-> ]] || cols=${COLUMNS:-80}
+        (( cap = cols / (ntabs > 0 ? ntabs : 1) ))
+        (( cap = cap < 15 ? 15 : (cap > 40 ? 40 : cap) ))
+      else
+        cap=$max
+      fi
+      title=$(_zt_agent_cap "$title" "$cap")
       # Compare against the live tab label so we re-assert our title if
       # something else (another shell, the agent) renamed the tab meanwhile
-      label=$(command herdr tab get "$HERDR_TAB_ID" 2>/dev/null | command jq -r '.result.tab.label // empty' 2>/dev/null)
       if [[ -n "$title" && "$title" != "$label" ]]; then
         command herdr tab rename "$HERDR_TAB_ID" "$title" >/dev/null 2>&1
       fi

@@ -141,13 +141,21 @@ When running inside [Herdr](https://herdr.dev) and launching an AI coding agent,
 1. the session name for [pi](https://pi.dev) (last `session_info` entry of the session file), or
 2. the terminal title set by the agent (e.g. Claude Code, Codex).
 
+pi does not name its sessions on its own, so install an extension that does, for example [pi-auto-rename](https://github.com/victor-software-house/pi-auto-rename) (`pi install npm:pi-auto-rename`). Without a session name the tab falls back to pi's terminal title.
+
 The watcher stops when the agent exits and the normal idle title is restored. Requires `jq`.
+
+The title is compacted before use: leading status glyphs/spinners, a trailing agent name (`- GitHub Copilot`, `| Claude Code`…), extra spaces and filler words (a, the, of, on…) are removed. It is then shortened at a word boundary with `…` to fit the tab bar: by default the pane width divided by the number of tabs in the workspace, kept between 15 and 40 characters.
 
 ```sh
 # Commands treated as agents (default shown)
-ZSH_TAB_TITLE_AGENTS=(pi claude codex opencode gemini amp crush cursor-agent droid)
+ZSH_TAB_TITLE_AGENTS=(pi claude codex opencode gemini amp crush cursor-agent droid copilot)
 # Poll interval in seconds (default 3)
 ZSH_TAB_TITLE_AGENT_POLL=3
+# Max title length: auto (default), a fixed number, or 0 for no limit
+ZSH_TAB_TITLE_AGENT_MAX_LENGTH=auto
+# Keep the raw agent title (still length limited)
+ZSH_TAB_TITLE_AGENT_COMPACT=false
 # Disable the feature
 ZSH_TAB_TITLE_AGENT_SESSION=false
 ```
