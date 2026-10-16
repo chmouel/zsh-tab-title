@@ -1,49 +1,35 @@
-# ZSH Tab Title
+# ZSH Smart Title
 
-**IMPORTANT:** Since May/2024 the default branch has changed from `master` to `main`. If you have this plugin installed or have cloned this repository before this date, you need to update your local repository to use the new branch. You can do this by executing the following command in the repository folder:
+A light fork of [trystan2k/zsh-tab-title](https://github.com/trystan2k/zsh-tab-title) — a ZSH plugin that automatically sets terminal tab titles based on current location and running command, based on the [oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/termsupport.zsh) termsupport library.
 
-```sh
-git branch -m master main
-git fetch origin
+This fork adds:
 
-git branch -u origin/main main
-```
-
-Or uninstalling the plugin and installing it again.
-
-**======**
-
-[![GitHub version](https://badge.fury.io/gh/trystan2k%2Fzsh-tab-title.svg)](https://badge.fury.io/gh/trystan2k%2Fzsh-tab-title)
-
-![Build](https://github.com/trystan2k/zsh-tab-title/workflows/CI-workflow/badge.svg)
-
-A zsh plugin that allows you to set a terminal header like any of PROMPT
-
-A ZSH plugin that automatically sets terminal tab titles based on current location and task.
-
-This is completely based on [oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/termsupport.zsh) term support library.
+- **Command name mapping** — rename commands in the tab title via `ZSH_TAB_TITLE_CMD_MAP`
+- **Custom tab title override** — force a specific title per command with `ZSH_TAB_PROMPT`
+- **Herdr terminal support** — tab title updates for the [Herdr](https://herdr.dev) terminal emulator
+- **Agent session tracking** — keeps the tab title in sync with AI coding agent session names in Herdr
 
 ## Installation
 
 ### Using [zinit](https://github.com/zdharma/zinit)
 
-Add `zinit light trystan2k/zsh-tab-title` into `.zshrc`
+Add `zinit light chmouel/zsh-smart-title` into `.zshrc`
 
 ### Using [zpm](https://github.com/zpm-zsh/zpm)
 
-Add `zpm load trystan2k/zsh-tab-title` into `.zshrc`
+Add `zpm load chmouel/zsh-smart-title` into `.zshrc`
 
 ### Using [oh-my-zsh](https://github.com/robbyrussell/oh-my-zsh)
 
-Execute `git clone https://github.com/trystan2k/zsh-tab-title ~/.oh-my-zsh/custom/plugins/zsh-tab-title`. Add `zsh-tab-title` into plugins array in `.zshrc`
+Execute `git clone https://github.com/chmouel/zsh-smart-title ~/.oh-my-zsh/custom/plugins/zsh-smart-title`. Add `zsh-smart-title` into plugins array in `.zshrc`
 
 ### Using [antigen](https://github.com/zsh-users/antigen)
 
-Add `antigen bundle trystan2k/zsh-tab-title` into `.zshrc`
+Add `antigen bundle chmouel/zsh-smart-title` into `.zshrc`
 
 ### Using [zgen](https://github.com/tarjoilija/zgen)
 
-Add `zgen load trystan2k/zsh-tab-title` into `.zshrc`
+Add `zgen load chmouel/zsh-smart-title` into `.zshrc`
 
 ## Configuration
 
@@ -59,7 +45,7 @@ ZSH_TAB_TITLE_DISABLE_AUTO_TITLE=true
 
 ### CURRENT FOLDER
 
-You can display in the tab title, just the last folder you are in. So for example, if you are at `/home/user/zsh-tab-title`, the tab will only display `zsh-tab-title`. The default behavior, it will show the complete path, truncated at 20 chars. To enable current folder only, do:
+You can display in the tab title, just the last folder you are in. So for example, if you are at `/home/user/zsh-smart-title`, the tab will only display `zsh-smart-title`. The default behavior, it will show the complete path, truncated at 20 chars. To enable current folder only, do:
 
 ```sh
 ZSH_TAB_TITLE_ONLY_FOLDER=true
@@ -67,7 +53,7 @@ ZSH_TAB_TITLE_ONLY_FOLDER=true
 
 ### CONCAT FOLDER AND PROCESS
 
-When executing a command, it is showed in the tab title. You can setup to concatenate the current folder to it, so it can display, for example, `zsh-tab-title:ls`, when doing a `ls` in `/home/user/zsh-tab-title`. To enable concat folder and process, do:
+When executing a command, it is showed in the tab title. You can setup to concatenate the current folder to it, so it can display, for example, `zsh-smart-title:ls`, when doing a `ls` in `/home/user/zsh-smart-title`. To enable concat folder and process, do:
 
 ```sh
 ZSH_TAB_TITLE_CONCAT_FOLDER_PROCESS=true
